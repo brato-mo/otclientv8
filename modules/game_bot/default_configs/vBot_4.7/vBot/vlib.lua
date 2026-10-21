@@ -835,7 +835,7 @@ function reachGroundItem(id)
     end
 
     if dest then
-        return autoWalk(iPos, 20, {ignoreNonPathable = true, precision = 1})
+        return autoWalk(dest:getPosition(), 20, {ignoreNonPathable = true, precision = 1})
     else
         return false
     end
