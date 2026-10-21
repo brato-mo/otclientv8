@@ -963,7 +963,7 @@ function assignHotkey(widget)
 
   local actionbar = widget:getParent():getParent()
   if actionbar.locked then
-    cancelFunc()
+    closeFunc()
   end
 end
 
