@@ -254,7 +254,6 @@ locale = {
     ["Options"] = "Opções",
     ["Overview"] = "Visão geral",
     ["Paladin"] = "Paladin",
-    ["Monk"] = "Monge",
     ["Pass Leadership to %s"] = "Passar liderança para %s",
     ["Password"] = "Senha",
     ["Piece Price"] = "Preço por peça",
