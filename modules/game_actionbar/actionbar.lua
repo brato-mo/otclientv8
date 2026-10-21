@@ -31,6 +31,8 @@ local function translateVocation(id)
     return 5 -- ms
   elseif id == 4 or id == 14 then
     return 6 -- ed
+  elseif id == 5 or id == 15 then
+    return 10 -- exalted monk
   end
 end
 

@@ -412,6 +412,7 @@ locale = {
     ["Sorcerer"] = "Czarodziej",
     ["Druid"] = false,
     ["Paladin"] = "Paladyn",
+    ["Monk"] = "Mnich",
     ["Knight"] = "Rycerz"
   }
 }
