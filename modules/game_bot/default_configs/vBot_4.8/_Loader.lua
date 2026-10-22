@@ -51,6 +51,7 @@ local luaFiles = {
   "npc_talk",
   "xeno_menu",
   "hold_target",
+  "hunt_guard",
   "cavebot_control_panel"
 }
 

@@ -281,7 +281,7 @@ UI.DualLabel = function(left, right, params, parent)
   left = left or ""
   right = right or ""
   params = params or {}
-  if not type(params) == "table" then
+  if type(params) ~= "table" then
     parent = params
     params = {}
   end
