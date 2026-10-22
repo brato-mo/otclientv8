@@ -414,7 +414,7 @@ function UIMiniWindow:fitOnParent()
   end
 end
 
-function UIMiniWindow:setParent(parent, dontsave)
+function UIMiniWindow:setParent(parent, dontSave)
   UIWidget.setParent(self, parent)
   if not dontSave then
     self:saveParent(parent)
