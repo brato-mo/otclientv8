@@ -13,26 +13,36 @@ end
 
 -- value of one item of this type, nil when the price is unknown
 local function getItemPrice(item)
-  local name = CoinNames[item:getId()]
+  local id = item:getId()
+  local name = CoinNames[id]
   if not name then
     local ok, data = pcall(function() return item:getMarketData() end)
     name = ok and data and data.name
   end
-  if not name or name == '' then return nil end
-  return ItemPrices[name:lower()]
+  if name and name ~= '' then
+    local price = ItemPrices[name:lower()]
+    if price then return price end
+  end
+  return ItemPricesById[id]
 end
 
-local function updateItemTooltip(widget, item)
+-- "144 gp" or "144 gp each, 1,440 gp total", nil when the price is unknown
+function getItemValueText(item)
   local price = item and getItemPrice(item)
-  if not price then
-    widget:removeTooltip()
-    return
-  end
+  if not price then return nil end
   local count = item:getCount()
   if count > 1 then
-    widget:setTooltip(string.format('%s each, %s total', formatGold(price), formatGold(price * count)))
+    return string.format('%s each, %s total', formatGold(price), formatGold(price * count))
+  end
+  return formatGold(price)
+end
+
+function updateItemTooltip(widget, item)
+  local text = getItemValueText(item)
+  if text then
+    widget:setTooltip(text)
   else
-    widget:setTooltip(formatGold(price))
+    widget:removeTooltip()
   end
 end
 
