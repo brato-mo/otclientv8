@@ -162,3 +162,8 @@ function toggleFullMap()
   minimapWidget:setZoom(zoom)
   minimapWidget:setCameraPosition(pos)
 end
+
+-- compatibility with OTClient Redemption API (used by newer vBot versions)
+function getMiniMapUi()
+  return minimapWidget
+end
