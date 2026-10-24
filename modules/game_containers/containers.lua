@@ -1,5 +1,52 @@
 local gameStart = 0
 
+local CoinNames = { [3031] = 'gold coin', [3035] = 'platinum coin', [3043] = 'crystal coin' }
+
+local function formatGold(value)
+  local formatted = tostring(math.floor(value))
+  local k
+  repeat
+    formatted, k = formatted:gsub('^(-?%d+)(%d%d%d)', '%1,%2')
+  until k == 0
+  return formatted .. ' gp'
+end
+
+-- value of one item of this type, nil when the price is unknown
+local function getItemPrice(item)
+  local name = CoinNames[item:getId()]
+  if not name then
+    local ok, data = pcall(function() return item:getMarketData() end)
+    name = ok and data and data.name
+  end
+  if not name or name == '' then return nil end
+  return ItemPrices[name:lower()]
+end
+
+local function updateItemTooltip(widget, item)
+  local price = item and getItemPrice(item)
+  if not price then
+    widget:removeTooltip()
+    return
+  end
+  local count = item:getCount()
+  if count > 1 then
+    widget:setTooltip(string.format('%s each, %s total', formatGold(price), formatGold(price * count)))
+  else
+    widget:setTooltip(formatGold(price))
+  end
+end
+
+-- sums the items directly inside the container (closed sub-containers are not counted)
+local function updateContainerTooltip(container)
+  if not container.window then return end
+  local total = 0
+  for _, item in ipairs(container:getItems()) do
+    total = total + (getItemPrice(item) or 0) * item:getCount()
+  end
+  local widget = container.window:getChildById('containerItemWidget')
+  widget:setTooltip('Items inside: ' .. formatGold(total))
+end
+
 function init()
   connect(Container, { onOpen = onContainerOpen,
                        onClose = onContainerClose,
@@ -52,8 +99,11 @@ end
 function refreshContainerItems(container)
   for slot=0,container:getCapacity()-1 do
     local itemWidget = container.itemsPanel:getChildById('item' .. slot)
-    itemWidget:setItem(container:getItem(slot))
+    local item = container:getItem(slot)
+    itemWidget:setItem(item)
+    updateItemTooltip(itemWidget, item)
   end
+  updateContainerTooltip(container)
 
   if container:hasPages() then
     refreshContainerPages(container)
@@ -182,7 +232,9 @@ function onContainerOpen(container, previousContainer)
   for slot=0,container:getCapacity()-1 do
     local itemWidget = g_ui.createWidget('Item', containerPanel)
     itemWidget:setId('item' .. slot)
-    itemWidget:setItem(container:getItem(slot))
+    local item = container:getItem(slot)
+    itemWidget:setItem(item)
+    updateItemTooltip(itemWidget, item)
     itemWidget:setMargin(0)
     itemWidget.position = container:getSlotPosition(slot)
 
@@ -193,6 +245,7 @@ function onContainerOpen(container, previousContainer)
 
   container.window = containerWindow
   container.itemsPanel = containerPanel
+  updateContainerTooltip(container)
 
   toggleContainerPages(containerWindow, container:hasPages())
   refreshContainerPages(container)
@@ -230,4 +283,6 @@ function onContainerUpdateItem(container, slot, item, oldItem)
   if not container.window then return end
   local itemWidget = container.itemsPanel:getChildById('item' .. slot)
   itemWidget:setItem(item)
+  updateItemTooltip(itemWidget, item)
+  updateContainerTooltip(container)
 end
