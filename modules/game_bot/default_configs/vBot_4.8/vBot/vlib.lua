@@ -289,7 +289,7 @@ function canCast(spell, ignoreRL, ignoreCd)
     if getSpellData(spell) then
         if (ignoreCd or not getSpellCoolDown(spell)) and
             (ignoreRL or level() >= getSpellData(spell).level and mana() >=
-                getSpellData(spell).mana) then
+                (tonumber(getSpellData(spell).mana) or 0)) then
             return true
         else
             return false
