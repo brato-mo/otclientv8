@@ -4,6 +4,7 @@ local settingsFile = ""
 local cachedSettings = nil
 local window = nil
 local mouseGrabberWidget = nil
+local itemCountEvent = nil
 
 local TYPE = {
   BLANK = 0,
@@ -69,6 +70,17 @@ function init()
     onSpellGroupCooldown = onSpellGroupCooldown,
     onSpellCooldown = onSpellCooldown
   })
+  connect(Container, {
+    onOpen = scheduleItemCountUpdate,
+    onClose = scheduleItemCountUpdate,
+    onSizeChange = scheduleItemCountUpdate,
+    onAddItem = scheduleItemCountUpdate,
+    onRemoveItem = scheduleItemCountUpdate,
+    onUpdateItem = scheduleItemCountUpdate
+  })
+  connect(LocalPlayer, {
+    onInventoryChange = scheduleItemCountUpdate
+  })
 
   if g_game.isOnline() then
     online()
@@ -88,6 +100,54 @@ function terminate()
     onSpellGroupCooldown = onSpellGroupCooldown,
     onSpellCooldown = onSpellCooldown
   })
+  disconnect(Container, {
+    onOpen = scheduleItemCountUpdate,
+    onClose = scheduleItemCountUpdate,
+    onSizeChange = scheduleItemCountUpdate,
+    onAddItem = scheduleItemCountUpdate,
+    onRemoveItem = scheduleItemCountUpdate,
+    onUpdateItem = scheduleItemCountUpdate
+  })
+  disconnect(LocalPlayer, {
+    onInventoryChange = scheduleItemCountUpdate
+  })
+  removeEvent(itemCountEvent)
+  itemCountEvent = nil
+end
+
+-- shows how many of the slot's item you carry (equipment + open containers)
+local function formatItemCount(count)
+  if count >= 100000 then
+    return math.floor(count / 1000) .. "k"
+  end
+  return tostring(count)
+end
+
+function updateItemCount(widget)
+  if widget.type ~= TYPE.ITEM or widget.spellData then return end
+  local player = g_game.getLocalPlayer()
+  local itemId = widget.item:getItemId()
+  if not player or itemId < 100 then
+    widget.parameterText:setText("")
+    return
+  end
+  widget.parameterText:setText(formatItemCount(player:getItemsCount(itemId)))
+end
+
+function updateItemCounts()
+  itemCountEvent = nil
+  for i, actionbar in ipairs(actionBars) do
+    if actionbar.tabBar and not actionbar.tabBar:isDestroyed() then
+      for j, widget in ipairs(actionbar.tabBar:getChildren()) do
+        updateItemCount(widget)
+      end
+    end
+  end
+end
+
+function scheduleItemCountUpdate()
+  if itemCountEvent then return end
+  itemCountEvent = scheduleEvent(updateItemCounts, 100)
 end
 
 function createActionBars()
@@ -148,6 +208,8 @@ function offline()
   end
 
   -- destroy actionbars
+  removeEvent(itemCountEvent)
+  itemCountEvent = nil
   for i, panel in ipairs(actionBars) do
     panel:destroy()
   end
@@ -411,6 +473,7 @@ function setupButton(widget)
     widget.parameterText:setText(param or "")
   else
     widget.text:setImageSource('')
+    updateItemCount(widget)
   end
 
   widget.item.onDragEnter = function(self)
