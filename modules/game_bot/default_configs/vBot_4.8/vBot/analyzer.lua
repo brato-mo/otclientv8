@@ -887,16 +887,9 @@ function hightlightText(widget, color, duration)
 end
 
 local nameRegex = [[Loot of (?:an |a |the |)([^:]+)]]
--- items from recent loot messages not yet seen in an open container, used for Store Inbox loot
-local pendingLoot = {}
-local coinNames = {["gold coin"] = true, ["platinum coin"] = true, ["crystal coin"] = true}
 onTextMessage(function(mode, text)
     if not text:find("Loot of") and not text:find("The following items are available in your reward chest") then return end
     local rawText = text
-    local lootIds = {}
-    for id, itemName in rawText:gmatch("{(%d+)|([^}]*)}") do
-      lootIds[formatStr(itemName):lower()] = tonumber(id)
-    end
     -- 12.x servers send items as {id|name}, keep only the name
     text = text:gsub("{%d+|([^}]*)}", "%1")
     local name = "reward chest"
@@ -938,12 +931,6 @@ onTextMessage(function(mode, text)
             local messageColor = getColor(getPrice(formattedLoot))
 
             combinedWorth = combinedWorth + price -- add all prices to calculate total worth
-
-            local pendingName = formatStr(formattedLoot):lower()
-            if not coinNames[pendingName] then
-              table.insert(pendingLoot, { name = pendingName, count = amount or 1, id = lootIds[pendingName] })
-              if #pendingLoot > 30 then table.remove(pendingLoot, 1) end
-            end
 
             add(t, data, color, i==#re)
             add(messageT, data, color, i==#re)
@@ -1405,7 +1392,7 @@ function refreshLoot()
       local label1 = UI.createWidget("AnalyzerLootItem", lootItems)
       local price = v.count and getPrice(v.name) * v.count or getPrice(v.name)
 
-      if type(k) == "number" then label1:setItemId(k) end
+      label1:setItemId(k)
       label1:setItemCount(50)
       label1:setShowCount(false)
       label1.count:setText(niceFormat(v.count))
@@ -1483,43 +1470,21 @@ local function isLootContainer(container)
   return containerItem and table.find(containers, containerItem:getId())
 end
 
-local function removePendingLoot(name)
-  if not name then return end
-  name = name:lower()
-  for i, entry in ipairs(pendingLoot) do
-    if entry.name:sub(1, #name) == name or name:sub(1, #entry.name) == entry.name then
-      table.remove(pendingLoot, i)
-      return
-    end
-  end
+-- Canary quick loot can put loot in the Loot pouch in the Store Inbox, which weighs nothing,
+-- so loot there is counted without the cap check (only while the pouch is open)
+local function isLootPouch(container)
+  local containerItem = container:getContainerItem()
+  if containerItem and containerItem:getId() == 23721 then return true end
+  local cName = container:getName():lower()
+  return cName == "loot pouch" or cName == "loot bag"
 end
 
--- Canary can loot into a bag in the Store Inbox ("You looted 1 item to Loot Bag (in Store Inbox).")
--- those items don't change cap, so count them from the pending loot message items instead
-onTextMessage(function(mode, text)
-  local looted = text:match("^You looted (%d+) items? to .+%(in Store Inbox%)")
-  if not looted then return end
-  for i = 1, tonumber(looted) do
-    local entry = table.remove(pendingLoot, 1)
-    if not entry then break end
-    local key = entry.id or entry.name
-    for k, v in pairs(lootedItems) do
-      if v.name == entry.name then key = k break end
-    end
-    if not lootedItems[key] then
-      lootedItems[key] = { count = entry.count, name = entry.name }
-    else
-      lootedItems[key].count = lootedItems[key].count + entry.count
-    end
-  end
-  refreshLoot()
-end)
-
 onAddItem(function(container, slot, item, oldItem)
-  if not isLootContainer(container) then return end
+  local pouch = isLootPouch(container)
+  if not pouch and not isLootContainer(container) then return end
   if isInPz() then return end
   if slot > 0 then return end 
-  if freecap() >= lastCap then return end
+  if not pouch and freecap() >= lastCap then return end
   local name = item:getId()
   local tmpname = item:getId() == 3031 and "gold coin" or item:getId() == 3035 and "platinum coin" or item:getId() == 3043 and "crystal coin" or item:getMarketData().name
   if not lootedItems[name] then
@@ -1527,7 +1492,6 @@ onAddItem(function(container, slot, item, oldItem)
   else
     lootedItems[name].count =  lootedItems[name].count + item:getCount()
   end
-  removePendingLoot(tmpname)
   lastCap = freecap()
   refreshLoot()
 
@@ -1535,10 +1499,11 @@ onAddItem(function(container, slot, item, oldItem)
 end)
 
 onContainerUpdateItem(function(container, slot, item, oldItem)
-  if not isLootContainer(container) then return end
+  local pouch = isLootPouch(container)
+  if not pouch and not isLootContainer(container) then return end
   if not oldItem then return end
   if isInPz() then return end 
-  if freecap() == lastCap then return end
+  if not pouch and freecap() == lastCap then return end
   
   local tmpname = item:getId() == 3031 and "gold coin" or item:getId() == 3035 and "platinum coin" or item:getId() == 3043 and "crystal coin" or item:getMarketData().name
   local amount = item:getCount() - oldItem:getCount()
@@ -1551,7 +1516,6 @@ onContainerUpdateItem(function(container, slot, item, oldItem)
   else
       lootedItems[name].count = lootedItems[name].count + amount
   end
-  removePendingLoot(tmpname)
   lastCap = freecap()
   refreshLoot()
 end)
