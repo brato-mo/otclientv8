@@ -52,7 +52,6 @@ local luaFiles = {
   "xeno_menu",
   "hold_target",
   "hunt_guard",
-  "mana_trainer",
   "cavebot_control_panel"
 }
 
