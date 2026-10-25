@@ -80,7 +80,9 @@ function clear()
   removeEvent(checkEvent)
 
   -- optimization, callback is not used when not needed
-  g_game.enableTileThingLuaCallback(false)
+  -- (still needed when game effects are turned off in options)
+  local effectsOff = modules.client_options and modules.client_options.getOption('showEffects') == false
+  g_game.enableTileThingLuaCallback(effectsOff and true or false)
 
   botTabs:clearTabs()  
   botTabs:setOn(false)
