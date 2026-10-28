@@ -56,7 +56,9 @@ function UIComboBox:setCurrentOption(text, dontSignal)
 end
 
 function UIComboBox:updateCurrentOption(newText)
-  self.options[self.currentIndex].text = newText
+  local option = self.options[self.currentIndex]
+  if not option then return end
+  option.text = newText
   self:setText(newText)
 end
 
@@ -102,7 +104,10 @@ function UIComboBox:removeOption(text)
   for i,v in ipairs(self.options) do
     if v.text == text then
       table.remove(self.options, i)
-      if self.currentIndex == i then
+      if #self.options == 0 then
+        self.currentIndex = -1
+        self:clearText()
+      elseif self.currentIndex == i then
         self:setCurrentIndex(1)
       elseif self.currentIndex > i then
         self.currentIndex = self.currentIndex - 1

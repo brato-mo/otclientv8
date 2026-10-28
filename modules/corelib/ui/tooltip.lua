@@ -70,14 +70,17 @@ function g_tooltip.terminate()
                          onHoverChange = onWidgetHoverChange })
 
   currentHoveredWidget = nil
-  toolTipLabel:destroy()
-  toolTipLabel = nil
+  if toolTipLabel then
+    toolTipLabel:destroy()
+    toolTipLabel = nil
+  end
 
   g_tooltip = nil
 end
 
 function g_tooltip.display(text)
-  if text == nil or text:len() == 0 then return end
+  if type(text) == 'number' then text = tostring(text) end
+  if type(text) ~= 'string' or text:len() == 0 then return end
   if not toolTipLabel then return end
 
   toolTipLabel:setText(text)
@@ -95,6 +98,7 @@ function g_tooltip.display(text)
 end
 
 function g_tooltip.hide()
+  if not toolTipLabel then return end
   g_effects.fadeOut(toolTipLabel, 100)
   
   disconnect(rootWidget, {

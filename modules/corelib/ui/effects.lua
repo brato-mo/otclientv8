@@ -2,6 +2,7 @@
 g_effects = {}
 
 function g_effects.fadeIn(widget, time, elapsed)
+  if not widget or widget:isDestroyed() then return end
   if not elapsed then elapsed = 0 end
   if not time then time = 300 end
   widget:setOpacity(math.min(elapsed/time, 1))
@@ -17,6 +18,7 @@ function g_effects.fadeIn(widget, time, elapsed)
 end
 
 function g_effects.fadeOut(widget, time, elapsed)
+  if not widget or widget:isDestroyed() then return end
   if not elapsed then elapsed = 0 end
   if not time then time = 300 end
   elapsed = math.max((1 - widget:getOpacity()) * time, elapsed)
@@ -39,7 +41,7 @@ end
 function g_effects.startBlink(widget, duration, interval, clickCancel)
   duration = duration or 0 -- until stop is called
   interval = interval or 500
-  clickCancel = clickCancel or true
+  if clickCancel == nil then clickCancel = true end
 
   removeEvent(widget.blinkEvent)
   removeEvent(widget.blinkStopEvent)
@@ -54,7 +56,10 @@ function g_effects.startBlink(widget, duration, interval, clickCancel)
     end, duration)
   end
 
-  connect(widget, { onClick = g_effects.stopBlink })
+  disconnect(widget, { onClick = g_effects.stopBlink })
+  if clickCancel then
+    connect(widget, { onClick = g_effects.stopBlink })
+  end
 end
 
 function g_effects.stopBlink(widget)
@@ -63,5 +68,6 @@ function g_effects.stopBlink(widget)
   removeEvent(widget.blinkStopEvent)
   widget.blinkEvent = nil
   widget.blinkStopEvent = nil
+  if widget:isDestroyed() then return end
   widget:setOn(false)
 end

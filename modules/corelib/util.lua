@@ -157,6 +157,7 @@ end
 
 function runinsandbox(func, ...)
   if type(func) == 'string' then
+    local err
     func, err = loadfile(resolvepath(func, 2))
     if not func then
       error(err)
@@ -166,8 +167,12 @@ function runinsandbox(func, ...)
   local oldenv = getfenv(0)
   setmetatable(env, { __index = oldenv } )
   setfenv(0, env)
-  func(...)
+  local ok, err = pcall(func, ...)
+  -- always restore the old environment, even when the sandboxed file fails
   setfenv(0, oldenv)
+  if not ok then
+    error(err, 0)
+  end
   return env
 end
 
@@ -330,7 +335,12 @@ function signalcall(param, ...)
 end
 
 function tr(s, ...)
-  return string.format(s, ...)
+  -- a bad format string should never crash the caller
+  local ok, ret = pcall(string.format, s, ...)
+  if ok then
+    return ret
+  end
+  return tostring(s)
 end
 
 function getOppositeAnchor(anchor)
@@ -363,8 +373,9 @@ function makesingleton(obj)
 end
 
 function comma_value(amount)
-  local formatted = amount
-  while true do  
+  local formatted = tostring(amount or 0)
+  local k
+  while true do
     formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
     if (k==0) then
       break

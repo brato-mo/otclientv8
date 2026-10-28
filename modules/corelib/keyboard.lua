@@ -24,7 +24,7 @@ end
 
 function retranslateKeyComboDesc(keyComboDesc)
   if keyComboDesc == nil then
-    error('Unable to translate key combo \'' .. keyComboDesc .. '\'')
+    error('Unable to translate key combo \'' .. tostring(keyComboDesc) .. '\'')
   end
 
   if type(keyComboDesc) == 'number' then

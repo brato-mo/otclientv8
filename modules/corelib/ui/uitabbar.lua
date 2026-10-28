@@ -80,6 +80,9 @@ function UITabBar:removeTab(tab)
     self:selectPrevTab()
   end
   table.remove(self.tabs, index)
+  if self.currentTab == tab then
+    self.currentTab = nil
+  end
   tab:destroy()
 end
 

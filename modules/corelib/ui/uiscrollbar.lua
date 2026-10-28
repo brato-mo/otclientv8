@@ -97,6 +97,7 @@ local function parseSliderPos(self, slider, pos, move)
   if (delta > 0 and hotDistance + delta > self.hotDistance) or
      (delta < 0 and hotDistance + delta < self.hotDistance) then
     local range, pxrange, px, offset, center = calcValues(self)
+    if pxrange - px <= 0 then return end
     local newvalue = self.value + delta * (range / (pxrange - px))
     self:setValue(newvalue)
   end
@@ -148,7 +149,7 @@ function UIScrollBar:onStyleApply(styleName, styleNode)
     elseif name == 'orientation' then
       self:setOrientation(value)
     elseif name == 'value' then
-      self:setValue(value)
+      self:setValue(tonumber(value) or 0)
     elseif name == 'pixels-scroll' then
       self.pixelsScroll = true
     elseif name == 'show-value' then
@@ -163,7 +164,7 @@ end
 
 function UIScrollBar:onDecrement()
   if g_keyboard.isCtrlPressed() then
-    self:decrement(self.value)
+    self:setValue(self.minimum)
   elseif g_keyboard.isShiftPressed() then
     self:decrement(10)
   else
@@ -173,7 +174,7 @@ end
 
 function UIScrollBar:onIncrement()
   if g_keyboard.isCtrlPressed() then
-    self:increment(self.maximum)
+    self:setValue(self.maximum)
   elseif g_keyboard.isShiftPressed() then
     self:increment(10)
   else
