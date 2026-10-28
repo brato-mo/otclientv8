@@ -38,6 +38,10 @@ TargetBot.Looting.onItemsUpdate = function()
   if dontSave then return end
   TargetBot.save()
   TargetBot.Looting.updateItemsAndContainers()
+  vBot.lootItems = {}
+  for i, item in ipairs(ui.items:getItems()) do
+    table.insert(vBot.lootItems, item['id'])
+  end
 end
 
 TargetBot.Looting.onContainersUpdate = function()
