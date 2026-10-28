@@ -55,5 +55,6 @@ function string:contains(str, checkCase, start, plain)
     self = self:lower()
     str = str:lower()
   end
-  return string.find(self, str, start and start or 1, plain == nil and true or false)
+  -- plain search unless plain is explicitly false
+  return string.find(self, str, start and start or 1, plain ~= false)
 end

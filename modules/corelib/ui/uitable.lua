@@ -273,7 +273,9 @@ function UITable:toggleSorting(enabled)
 end
 
 function UITable:setSorting(colId, sortType)
-  self.headerColumns[colId]:focus()
+  if self.headerColumns[colId] then
+    self.headerColumns[colId]:focus()
+  end
 
   if sortType then
     self.sortType = sortType
@@ -294,13 +296,24 @@ function UITable:sort()
     return
   end
 
+  local function sortValue(row)
+    local column = row:getChildByIndex(self.sortColumn)
+    return column and column.sortvalue or 0
+  end
+  local function lessThan(a, b)
+    if type(a) == type(b) and (type(a) == 'number' or type(a) == 'string') then
+      return a < b
+    end
+    return tostring(a) < tostring(b)
+  end
+
   if self.sortType == TABLE_SORTING_ASC then
     table.sort(self.rows, function(rowA, b)
-      return rowA:getChildByIndex(self.sortColumn).sortvalue < b:getChildByIndex(self.sortColumn).sortvalue
+      return lessThan(sortValue(rowA), sortValue(b))
     end)
   else
     table.sort(self.rows, function(rowA, b)
-      return rowA:getChildByIndex(self.sortColumn).sortvalue > b:getChildByIndex(self.sortColumn).sortvalue
+      return lessThan(sortValue(b), sortValue(rowA))
     end)
   end
 

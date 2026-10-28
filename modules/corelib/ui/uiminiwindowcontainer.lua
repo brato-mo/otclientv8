@@ -194,10 +194,11 @@ function UIMiniWindowContainer:order()
     if not children[i].miniLoaded then return end
   end
 
+  local function sortIndex(widget)
+    return tonumber(widget.miniIndex) or tonumber(widget.autoOpen) or 999
+  end
   table.sort(children, function(a, b)
-    local indexA = a.miniIndex or a.autoOpen or 999
-    local indexB = b.miniIndex or b.autoOpen or 999
-    return indexA < indexB
+    return sortIndex(a) < sortIndex(b)
   end)
 
   self:reorderChildren(children)

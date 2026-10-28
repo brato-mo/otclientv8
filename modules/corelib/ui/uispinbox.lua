@@ -50,7 +50,7 @@ function UISpinBox:onTextChange(text, oldText)
 
   local number = tonumber(text)
   if not number then
-    self:setText(number)
+    self:setText(oldText and tonumber(oldText) and oldText or tostring(self.value))
     return
   else
     if number < self.minimum then

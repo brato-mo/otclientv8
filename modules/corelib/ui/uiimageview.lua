@@ -15,6 +15,7 @@ function UIImageView:getDefaultZoom()
   local height = self:getHeight()
   local textureWidth = self:getImageTextureWidth()
   local textureHeight = self:getImageTextureHeight()
+  if textureWidth <= 0 or textureHeight <= 0 then return 1 end
   local zoomX = width / textureWidth
   local zoomY = height / textureHeight
   return math.min(zoomX, zoomY)

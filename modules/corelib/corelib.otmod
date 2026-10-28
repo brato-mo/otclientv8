@@ -7,6 +7,7 @@ Module
 
   @onLoad: |
     dofile 'math'
+    dofile 'tibia'
     dofile 'string'
     dofile 'table'
     dofile 'bitwise'

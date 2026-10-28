@@ -7,6 +7,8 @@ function UIProgressBar.create()
   progressbar:setOn(true)
   progressbar.min = 0
   progressbar.max = 100
+  progressbar.minimum = 0
+  progressbar.maximum = 100
   progressbar.value = 0
   progressbar.bgBorderLeft = 0
   progressbar.bgBorderRight = 0
@@ -38,7 +40,7 @@ function UIProgressBar:setValue(value, minimum, maximum)
     self:setMaximum(maximum)
   end
 
-  self.value = math.max(math.min(value, self.maximum), self.minimum)
+  self.value = math.max(math.min(tonumber(value) or 0, self.maximum), self.minimum)
   self:updateBackground()
 end
 
@@ -51,7 +53,9 @@ function UIProgressBar:getPercent()
 end
 
 function UIProgressBar:getPercentPixels()
-  return (self.maximum - self.minimum) / self:getWidth()
+  local width = self:getWidth()
+  if width <= 0 then return 0 end
+  return (self.maximum - self.minimum) / width
 end
 
 function UIProgressBar:getProgress()

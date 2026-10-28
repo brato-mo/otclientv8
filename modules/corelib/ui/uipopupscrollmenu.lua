@@ -79,7 +79,9 @@ function UIPopupScrollMenu:addOption(optionName, optionCallback, shortcut)
   local optionWidget = g_ui.createWidget(self:getStyleName() .. 'Button', self.scrollArea)
   optionWidget.onClick = function(widget)
     self:destroy()
-    optionCallback()
+    if optionCallback then
+      optionCallback()
+    end
   end
   optionWidget:setText(optionName)
   local width = optionWidget:getTextSize().width + optionWidget:getMarginLeft() + optionWidget:getMarginRight() + 15

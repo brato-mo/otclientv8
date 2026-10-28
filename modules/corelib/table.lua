@@ -3,7 +3,7 @@
 function table.dump(t, depth)
   if not depth then depth = 0 end
   for k,v in pairs(t) do
-    str = (' '):rep(depth * 2) .. k .. ': '
+    local str = (' '):rep(depth * 2) .. tostring(k) .. ': '
     if type(v) ~= "table" then
       print(str .. tostring(v))
     else
@@ -90,14 +90,18 @@ end
 function table.removevalue(t, value)
   for k,v in pairs(t) do
     if v == value then
-      table.remove(t, k)
+      if type(k) == 'number' then
+        table.remove(t, k)
+      else
+        t[k] = nil
+      end
       return true
     end
   end
   return false
 end
 
-function table.popvalue(value)
+function table.popvalue(t, value)
   local index = nil
   for k,v in pairs(t) do
     if v == value or not value then

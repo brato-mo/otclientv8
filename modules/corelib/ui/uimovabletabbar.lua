@@ -337,11 +337,19 @@ function UIMoveableTabBar:removeTab(tab)
   if tabTable == nil then
     return
   end
-  table.remove(tabTable, index)
   if self.currentTab == tab then
+    -- select another tab while this one is still in the list
     self:selectPrevTab()
-    if #self.tabs == 1 then
+    if self.currentTab == tab then
       self.currentTab = nil
+    end
+  end
+  -- selecting another tab can move tabs between the visible/hidden lists
+  for i = 1, #tabTables do
+    index = table.find(tabTables[i], tab)
+    if index ~= nil then
+      table.remove(tabTables[i], index)
+      break
     end
   end
   if tab.blinkEvent then
@@ -395,7 +403,9 @@ function UIMoveableTabBar:selectTab(tab)
   end
 
   local parent = tab:getParent()
-  parent:focusChild(tab, MouseFocusReason)
+  if parent then
+    parent:focusChild(tab, MouseFocusReason)
+  end
   updateNavigation(self)
 end
 

@@ -95,10 +95,13 @@ function UIMiniWindow:unlock(dontSave)
 end
 
 function UIMiniWindow:setup()
-  self:getChildById('closeButton').onClick =
-    function()
-      self:close()
-    end
+  local closeButton = self:getChildById('closeButton')
+  if closeButton then
+    closeButton.onClick =
+      function()
+        self:close()
+      end
+  end
   if self.forceOpen then
       if self.closeButton then
         self.closeButton:hide()
@@ -236,7 +239,7 @@ function UIMiniWindow:onDragLeave(droppedWidget, mousePos)
     self.movedIndex = nil
   end
 
-  UIWindow:onDragLeave(self, droppedWidget, mousePos)
+  UIWindow.onDragLeave(self, droppedWidget, mousePos)
   self:saveParent(self:getParent())
 end
 

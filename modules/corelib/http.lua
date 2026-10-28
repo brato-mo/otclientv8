@@ -118,6 +118,7 @@ function HTTP.onGet(operationId, url, err, data)
   if operation == nil then
     return
   end
+  HTTP.operations[operationId] = nil
   if err and err:len() == 0 then
     err = nil
   end
@@ -152,6 +153,7 @@ function HTTP.onPost(operationId, url, err, data)
   if operation == nil then
     return
   end
+  HTTP.operations[operationId] = nil
   if err and err:len() == 0 then
     err = nil
   end
@@ -185,6 +187,7 @@ function HTTP.onDownload(operationId, url, err, path, checksum)
   if operation == nil then
     return
   end
+  HTTP.operations[operationId] = nil
   if err and err:len() == 0 then
     err = nil
   end
@@ -256,6 +259,7 @@ function HTTP.onWsClose(operationId, message)
   if operation == nil then
     return
   end
+  HTTP.operations[operationId] = nil
   if operation.callbacks.onClose then
     operation.callbacks.onClose(message, operationId)
   end
