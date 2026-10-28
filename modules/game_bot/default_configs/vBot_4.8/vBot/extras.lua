@@ -33,8 +33,11 @@ local addCheckBox = function(id, title, defaultValue, dest, tooltip)
     widget:setOn(not widget:isOn())
     settings[id] = widget:isOn()
     if id == "checkPlayer" then
-      local label = rootWidget.newHealer.targetSettings.vocations.title
-      if not widget:isOn() then
+      local healer = rootWidget.newHealer
+      local label = healer and healer.targetSettings and healer.targetSettings.vocations and healer.targetSettings.vocations.title
+      if not label then
+        -- friend healer window not loaded, nothing to recolor
+      elseif not widget:isOn() then
         label:setColor("#d9321f")
         label:setTooltip("! WARNING ! \nTurn on check players in extras to use this feature!")
       else
@@ -333,7 +336,7 @@ if true then
                      1632, 11705, 30772, 30774, 6248, 5735, 5732, 5120, 23873, 5736,
                      6264, 5122, 30049, 30042, 7727 }
 
-  function checkForDoors(pos)
+  local function checkForDoors(pos)
     local tile = g_map.getTile(pos)
     if tile then
       local useThing = tile:getTopUseThing()
@@ -367,6 +370,8 @@ if true then
     elseif wsadWalking and keys == "C" then
       pos.y = pos.y + 1
       pos.x = pos.x + 1
+    else
+      return -- not a walking key, don't touch the door we may be standing in
     end
     checkForDoors(pos)
   end)
@@ -407,7 +412,7 @@ if true then
   onUseWith(function(pos, itemId, target, subType)
     if settings.reUse and not table.find(excluded, itemId) then
       schedule(50, function()
-        item = findItem(itemId)
+        local item = findItem(itemId)
         if item then
           modules.game_interface.startUseWith(item)
         end
@@ -437,50 +442,81 @@ if true then
   local hold = 0
   local mwHot
   local wgHot
+  local lastUse = 0
 
   local candidates = {}
+
+  local function holdRune(tile)
+    local text = tile:getText()
+    if text == "HOLD MW" then return 3180 end
+    if text == "HOLD WG" then return 3156 end
+  end
+
+  local function inRange(tile)
+    local p = player:getPosition()
+    local t = tile:getPosition()
+    return p.z == t.z and math.abs(p.x - t.x) < 8 and math.abs(p.y - t.y) < 6
+  end
+
+  local function removeCandidate(pos)
+    for i = #candidates, 1, -1 do
+      local c = candidates[i]
+      if c.x == pos.x and c.y == pos.y and c.z == pos.z then
+        table.remove(candidates, i)
+      end
+    end
+  end
+
+  local function addCandidate(pos)
+    removeCandidate(pos)
+    table.insert(candidates, pos)
+  end
+
   local m = macro(20, function()
     mwHot = settings.holdMwHot
     wgHot = settings.holdWgHot
-    
-    if not settings.holdMwall then return end
-      if #candidates == 0 then return end
 
-      for i, pos in pairs(candidates) do
-        local tile = g_map.getTile(pos)
-        if tile then
-          if tile:getText():len() == 0 then 
-            table.remove(candidates, i)
-          end
-          local rune = tile:getText() == "HOLD MW" and 3180 or tile:getText() == "HOLD WG" and 3156
-          if tile:canShoot() and not isInPz() and tile:isWalkable() and tile:getTopUseThing():getId() ~= 2130 then
-            if math.abs(player:getPosition().x-tile:getPosition().x) < 8 and math.abs(player:getPosition().y-tile:getPosition().y) < 6 then
-              return useWith(rune, tile:getTopUseThing())
-            end
-          end
+    if not settings.holdMwall then return end
+    if #candidates == 0 then return end
+    if now - lastUse < 250 then return end -- don't flood the server with rune packets
+
+    for i = #candidates, 1, -1 do
+      local tile = g_map.getTile(candidates[i])
+      if tile then
+        local rune = holdRune(tile)
+        local topThing = tile:getTopUseThing()
+        if not rune then
+          table.remove(candidates, i)
+        elseif topThing and tile:canShoot() and not isInPz() and tile:isWalkable() and topThing:getId() ~= 2130 and inRange(tile) then
+          lastUse = now
+          return useWith(rune, topThing)
         end
       end
+    end
   end)
 
   onRemoveThing(function(tile, thing)
     if not settings.holdMwall then return end
-      if thing:getId() ~= 2129 then return end
-      if tile:getText():find("HOLD") then
-          table.insert(candidates, tile:getPosition())
-          local rune = tile:getText() == "HOLD MW" and 3180 or tile:getText() == "HOLD WG" and 3156
-          if math.abs(player:getPosition().x-tile:getPosition().x) < 8 and math.abs(player:getPosition().y-tile:getPosition().y) < 6 then
-            return useWith(rune, tile:getTopUseThing())
-          end
-      end
+    if not thing:isItem() then return end
+    if thing:getId() ~= 2129 and thing:getId() ~= 2130 then return end
+    local rune = holdRune(tile)
+    if not rune then return end
+    addCandidate(tile:getPosition())
+    local topThing = tile:getTopUseThing()
+    if topThing and inRange(tile) then
+      lastUse = now
+      return useWith(rune, topThing)
+    end
   end)
 
   onAddThing(function(tile, thing)
     if not settings.holdMwall then return end
-      if m.isOff() then return end
-      if thing:getId() ~= 2129 then return end
-      if tile:getText():len() > 0 then
-          table.remove(candidates, table.find(candidates,tile))
-      end
+    if m.isOff() then return end
+    if not thing:isItem() then return end
+    if thing:getId() ~= 2129 and thing:getId() ~= 2130 then return end
+    if tile:getText():len() > 0 then
+      removeCandidate(tile:getPosition())
+    end
   end)
 
   onKeyDown(function(keys)
@@ -502,7 +538,7 @@ if true then
         else
             tile:setText("HOLD WG")
         end
-        table.insert(candidates, tile:getPosition())
+        addCandidate(tile:getPosition())
     end
   end)
 
@@ -557,31 +593,30 @@ if true then
     end
   end)
 
-  local regex = [[You see ([^\(]*) \(Level ([0-9]*)\)((?:.)* of the ([\w ]*),|)]]
+  local vocations = {
+    {"monk", "EM"}, {"sorcerer", "MS"}, {"druid", "ED"}, {"knight", "EK"}, {"paladin", "RP"}
+  }
   onTextMessage(function(mode, text)
     if not settings.checkPlayer then return end
 
-    local re = regexMatch(text, regex)
-    if #re ~= 0 then
-        local name = re[1][2]
-        local level = re[1][3]
-        local guild = re[1][5] or ""
+    -- "You see Name (Level 100). He is an elite knight. He is Leader of the Guild (nick)."
+    local name, level, rest = text:match("^You see (.-) %(Level (%d+)%)(.*)$")
+    if name then
+        rest = rest or ""
+        local guild = rest:match(" of the ([^%.%(]+)") or ""
+        guild = guild:gsub("%s+$", "")
 
         if guild:len() > 10 then
           guild = guild:sub(1,10) -- change to proper (last) values
           guild = guild.."..."
         end
         local voc = ""
-        if text:lower():find("monk") then
-            voc = "EM"
-        elseif text:lower():find("sorcerer") then
-            voc = "MS"
-        elseif text:lower():find("druid") then
-            voc = "ED"
-        elseif text:lower():find("knight") then
-            voc = "EK"
-        elseif text:lower():find("paladin") then
-            voc = "RP"
+        local vocText = (rest:match("^%. %a+ is an? ([%a ]+)%.") or ""):lower()
+        for _, v in ipairs(vocations) do
+          if vocText:find(v[1]) then
+            voc = v[2]
+            break
+          end
         end
         local creature = getCreatureByName(name)
         if creature then
