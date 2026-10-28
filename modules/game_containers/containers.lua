@@ -37,26 +37,6 @@ function getItemValueText(item)
   return formatGold(price)
 end
 
-function updateItemTooltip(widget, item)
-  local text = getItemValueText(item)
-  if text then
-    widget:setTooltip(text)
-  else
-    widget:removeTooltip()
-  end
-end
-
--- sums the items directly inside the container (closed sub-containers are not counted)
-local function updateContainerTooltip(container)
-  if not container.window then return end
-  local total = 0
-  for _, item in ipairs(container:getItems()) do
-    total = total + (getItemPrice(item) or 0) * item:getCount()
-  end
-  local widget = container.window:getChildById('containerItemWidget')
-  widget:setTooltip('Items inside: ' .. formatGold(total))
-end
-
 function init()
   connect(Container, { onOpen = onContainerOpen,
                        onClose = onContainerClose,
@@ -109,11 +89,8 @@ end
 function refreshContainerItems(container)
   for slot=0,container:getCapacity()-1 do
     local itemWidget = container.itemsPanel:getChildById('item' .. slot)
-    local item = container:getItem(slot)
-    itemWidget:setItem(item)
-    updateItemTooltip(itemWidget, item)
+    itemWidget:setItem(container:getItem(slot))
   end
-  updateContainerTooltip(container)
 
   if container:hasPages() then
     refreshContainerPages(container)
@@ -242,9 +219,7 @@ function onContainerOpen(container, previousContainer)
   for slot=0,container:getCapacity()-1 do
     local itemWidget = g_ui.createWidget('Item', containerPanel)
     itemWidget:setId('item' .. slot)
-    local item = container:getItem(slot)
-    itemWidget:setItem(item)
-    updateItemTooltip(itemWidget, item)
+    itemWidget:setItem(container:getItem(slot))
     itemWidget:setMargin(0)
     itemWidget.position = container:getSlotPosition(slot)
 
@@ -255,7 +230,6 @@ function onContainerOpen(container, previousContainer)
 
   container.window = containerWindow
   container.itemsPanel = containerPanel
-  updateContainerTooltip(container)
 
   toggleContainerPages(containerWindow, container:hasPages())
   refreshContainerPages(container)
@@ -293,6 +267,4 @@ function onContainerUpdateItem(container, slot, item, oldItem)
   if not container.window then return end
   local itemWidget = container.itemsPanel:getChildById('item' .. slot)
   itemWidget:setItem(item)
-  updateItemTooltip(itemWidget, item)
-  updateContainerTooltip(container)
 end

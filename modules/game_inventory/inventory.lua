@@ -240,11 +240,9 @@ function onInventoryChange(player, slot, item, oldItem)
   if item then
     itemWidget:setStyle('InventoryItem')
     itemWidget:setItem(item)
-    if modules.game_containers then modules.game_containers.updateItemTooltip(itemWidget, item) end
   else
     itemWidget:setStyle(InventorySlotStyles[slot])
     itemWidget:setItem(nil)
-    itemWidget:removeTooltip()
   end
 end
 
