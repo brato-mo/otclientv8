@@ -99,7 +99,9 @@ function UIMinimap:setCrossPosition(pos)
     self.cross = cross
   end
 
-  pos.z = self:getCameraPosition().z
+  if pos then
+    pos = {x = pos.x, y = pos.y, z = self:getCameraPosition().z}
+  end
   cross.pos = pos
   if pos then
     self:centerInPosition(cross, pos)
@@ -184,7 +186,7 @@ end
 
 function UIMinimap:reset()
   self:setZoom(0)
-  if self.cross then
+  if self.cross and self.cross.pos then
     self:setCameraPosition(self.cross.pos)
   end
 end
@@ -227,7 +229,7 @@ function UIMinimap:onMouseRelease(pos, button)
 
   if button == MouseLeftButton then
     local player = g_game.getLocalPlayer()
-    if self.autowalk then
+    if self.autowalk and player then
       player:autoWalk(mapPos)
     end
     return true

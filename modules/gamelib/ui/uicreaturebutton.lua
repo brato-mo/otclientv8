@@ -32,7 +32,7 @@ function UICreatureButton:getCreature()
 end
 
 function UICreatureButton:getCreatureId()
-    return self.creature:getId()
+    return self.creature and self.creature:getId()
 end
 
 function UICreatureButton:setup(id)
@@ -145,7 +145,7 @@ function UICreatureButton:updateLifeBarPercent()
   self.lifeBarWidget:setPercent(percent)
 
   local color
-  for i, v in pairs(LifeBarColors) do
+  for i, v in ipairs(LifeBarColors) do
     if percent > v.percentAbove then
       color = v.color
       break

@@ -21,11 +21,14 @@ ShieldBlueNoSharedExpBlink = 7
 ShieldYellowNoSharedExpBlink = 8
 ShieldBlueNoSharedExp = 9
 ShieldYellowNoSharedExp = 10
+ShieldGray = 11
 
 EmblemNone = 0
 EmblemGreen = 1
 EmblemRed = 2
 EmblemBlue = 3
+EmblemMember = 4
+EmblemOther = 5
 
 NpcIconNone = 0
 NpcIconChat = 1
@@ -38,6 +41,7 @@ CreatureTypeMonster = 1
 CreatureTypeNpc = 2
 CreatureTypeSummonOwn = 3
 CreatureTypeSummonOther = 4
+CreatureTypeHidden = 5
 
 -- @}
 
@@ -173,4 +177,29 @@ function Creature:setOutfitShader(shader)
   local outfit = self:getOutfit()
   outfit.shader = shader
   self:setOutfit(outfit)
+end
+
+-- Distance in tiles (diagonal step counts as 1, like Tibia walking/spell range).
+-- target can be a creature, a thing or a position. Returns nil on another floor.
+function Creature:getDistance(target)
+  local from = self:getPosition()
+  local to = target
+  if type(target) == 'userdata' and target.getPosition then
+    to = target:getPosition()
+  end
+  if not from or type(to) ~= 'table' or from.z ~= to.z then
+    return nil
+  end
+  return math.max(math.abs(from.x - to.x), math.abs(from.y - to.y))
+end
+
+function Creature:isInRange(target, range)
+  local distance = self:getDistance(target)
+  return distance ~= nil and distance <= range
+end
+
+function Creature:isPartyMemberOrSummon()
+  local creatureType = self:getType()
+  if creatureType == CreatureTypeSummonOwn then return true end
+  return self:isPlayer() and Player.isPartyMember(self)
 end

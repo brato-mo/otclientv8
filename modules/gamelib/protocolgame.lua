@@ -5,11 +5,10 @@ local extendedJSONData = {}
 local maxPacketSize = 65000
 
 function ProtocolGame:onOpcode(opcode, msg)
-  for i, callback in pairs(opcodeCallbacks) do
-    if i == opcode then
-      callback(self, msg)
-      return true
-    end
+  local callback = opcodeCallbacks[opcode]
+  if callback then
+    callback(self, msg)
+    return true
   end
   return false
 end
@@ -36,7 +35,7 @@ function ProtocolGame:onExtendedOpcode(opcode, buffer)
       local json_status, json_data = pcall(function() return json.decode(extendedJSONData[opcode]) end)
       extendedJSONData[opcode] = nil
       if not json_status then
-        error("Invalid data in extended JSON opcode (" .. json_status .. "): " .. json_data)
+        error("Invalid data in extended JSON opcode (" .. opcode .. "): " .. tostring(json_data))
         return
       end
       callback(self, opcode, json_data)
