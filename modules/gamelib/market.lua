@@ -10,7 +10,11 @@ MarketAction = {
 
 MarketRequest = {
   MyOffers = 0xFFFE,
-  MyHistory = 0xFFFF
+  MyHistory = 0xFFFF,
+  -- newer protocols (Canary MarketRequest_t), not used by 12.20 and lower
+  OwnHistory = 1,
+  OwnOffers = 2,
+  ItemBrowse = 3
 }
 
 MarketOfferState = {
@@ -47,6 +51,7 @@ MarketCategory = {
   PremiumScrolls = 22,
   TibiaCoins = 23,
   CreatureProducs = 24,
+  CreatureProducts = 24,
   Unknown1 = 25,
   Unknown2 = 26,
   StashRetrieve = 27,

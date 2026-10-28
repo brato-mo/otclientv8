@@ -18,7 +18,23 @@ PlayerStates = {
   PzBlock = 8192,
   Pz = 16384,
   Bleeding = 32768,
-  Hungry = 65536
+  Hungry = 65536,
+  -- newer states (Canary PlayerIcon), only sent by servers using
+  -- 32-bit player states; LesserHex shares bit 16 with Hungry
+  LesserHex = 65536,
+  IntenseHex = 131072,
+  GreaterHex = 262144,
+  Rooted = 524288,
+  Feared = 1048576,
+  GoshnarTaint1 = 2097152,
+  GoshnarTaint2 = 4194304,
+  GoshnarTaint3 = 8388608,
+  GoshnarTaint4 = 16777216,
+  GoshnarTaint5 = 33554432,
+  NewManaShield = 67108864,
+  Agony = 134217728,
+  Powerless = 268435456,
+  MentorOther = 536870912
 }
 
 InventorySlotOther = 0
@@ -135,15 +151,104 @@ function Player:hasState(state, states)
   if not states then
     states = self:getStates()
   end
-
-  for i = 1, 32 do
-    local pow = math.pow(2, i-1)
-    if pow > states then break end
-
-    local states = bit32.band(states, pow)
-    if states == state then
-      return true
-    end
+  if not state or state == 0 or not states then
+    return false
   end
-  return false
+  -- true when every bit of state is set (works for single and combined flags)
+  return bit32.band(states, state) == state
+end
+
+-- Vocations as sent to the client (Canary VOCATION_*_CIP, TFS clientid).
+-- Promoted vocations are base id + 10. Custom servers may use other ids.
+ClientVocations = {
+  None = 0,
+  Knight = 1,
+  Paladin = 2,
+  Sorcerer = 3,
+  Druid = 4,
+  Monk = 5
+}
+
+-- client vocation id -> server vocation id (ids used in SpellInfo / VocationNames)
+local clientToServerVocation = {
+  [1] = 4, [2] = 3, [3] = 1, [4] = 2, [5] = 9,
+  [11] = 8, [12] = 7, [13] = 5, [14] = 6, [15] = 10
+}
+
+function getServerVocationId(clientVocationId)
+  return clientToServerVocation[clientVocationId] or 0
+end
+
+function getVocationName(clientVocationId)
+  local serverId = getServerVocationId(clientVocationId)
+  return VocationNames and VocationNames[serverId] or 'None'
+end
+
+-- base vocation (1-5, see ClientVocations) without promotion
+function getBaseVocation(clientVocationId)
+  if not clientVocationId or clientVocationId <= 0 then return 0 end
+  return clientVocationId > 10 and clientVocationId - 10 or clientVocationId
+end
+
+function LocalPlayer:getServerVocation()
+  return getServerVocationId(self:getVocation())
+end
+
+function LocalPlayer:getVocationName()
+  return getVocationName(self:getVocation())
+end
+
+function LocalPlayer:isPromoted()
+  return self:getVocation() > 10
+end
+
+function LocalPlayer:isKnight() return getBaseVocation(self:getVocation()) == ClientVocations.Knight end
+function LocalPlayer:isPaladin() return getBaseVocation(self:getVocation()) == ClientVocations.Paladin end
+function LocalPlayer:isSorcerer() return getBaseVocation(self:getVocation()) == ClientVocations.Sorcerer end
+function LocalPlayer:isDruid() return getBaseVocation(self:getVocation()) == ClientVocations.Druid end
+function LocalPlayer:isMonk() return getBaseVocation(self:getVocation()) == ClientVocations.Monk end
+function LocalPlayer:isMage()
+  local base = getBaseVocation(self:getVocation())
+  return base == ClientVocations.Sorcerer or base == ClientVocations.Druid
+end
+
+function LocalPlayer:getHealthPercentExact()
+  local maxHealth = self:getMaxHealth()
+  if not maxHealth or maxHealth <= 0 then return 0 end
+  return self:getHealth() * 100 / maxHealth
+end
+
+function LocalPlayer:getManaPercentExact()
+  local maxMana = self:getMaxMana()
+  if not maxMana or maxMana <= 0 then return 0 end
+  return self:getMana() * 100 / maxMana
+end
+
+-- total experience needed to reach a level (official Tibia formula)
+function getExperienceForLevel(level)
+  level = level - 1
+  return math.floor((50 * level * level * level - 150 * level * level + 400 * level) / 3)
+end
+
+function LocalPlayer:getExperienceToNextLevel()
+  return math.max(0, getExperienceForLevel(self:getLevel() + 1) - self:getExperience())
+end
+
+-- stamina is in minutes; 'green' stamina (bonus exp) is above 39h, 'orange' below 14h
+function LocalPlayer:hasGreenStamina()
+  return self:getStamina() > 39 * 60
+end
+
+function LocalPlayer:hasLowStamina()
+  return self:getStamina() <= 14 * 60
+end
+
+function LocalPlayer:getStaminaText()
+  local stamina = self:getStamina()
+  return string.format('%02d:%02d', math.floor(stamina / 60), stamina % 60)
+end
+
+-- weight in oz, same unit as getFreeCapacity()
+function LocalPlayer:canCarry(weight)
+  return self:getFreeCapacity() >= weight
 end

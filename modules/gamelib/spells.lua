@@ -431,9 +431,10 @@ SpellGroups = {
 Spells = {}
 
 function Spells.getClientId(spellName)
-  local profile = Spells.getSpellProfileByName(spellName)
+  local spell = Spells.getSpellByName(spellName)
+  if not spell then return nil end
 
-  local id = SpellInfo[profile][spellName].icon
+  local id = spell.icon
   if not tonumber(id) and SpellIcons[id] then
     return SpellIcons[id][1]
   end
@@ -441,9 +442,10 @@ function Spells.getClientId(spellName)
 end
 
 function Spells.getServerId(spellName)
-  local profile = Spells.getSpellProfileByName(spellName)
+  local spell = Spells.getSpellByName(spellName)
+  if not spell then return nil end
 
-  local id = SpellInfo[profile][spellName].icon
+  local id = spell.icon
   if not tonumber(id) and SpellIcons[id] then
     return SpellIcons[id][2]
   end
@@ -451,10 +453,15 @@ function Spells.getServerId(spellName)
 end
 
 function Spells.getSpellByName(name)
-  return SpellInfo[Spells.getSpellProfileByName(name)][name]
+  if type(name) ~= 'string' then return nil end
+  name = name:trim()
+  local profile = Spells.getSpellProfileByName(name)
+  if not profile then return nil end
+  return SpellInfo[profile][name]
 end
 
 function Spells.getSpellByWords(words)
+  if type(words) ~= 'string' then return nil end
   local words = words:lower():trim()
   for profile,data in pairs(SpellInfo) do
     for k,spell in pairs(data) do
@@ -464,6 +471,30 @@ function Spells.getSpellByWords(words)
     end
   end
   return nil
+end
+
+-- Like getSpellByWords, but also matches spells cast with a parameter,
+-- e.g. 'exura sio "Friend"' or 'utevo res "rat'. Returns spell, profile, name, param.
+function Spells.getSpellByText(text)
+  if type(text) ~= 'string' then return nil end
+  local raw = text:trim()
+  text = raw:lower()
+  local spell, profile, name = Spells.getSpellByWords(text)
+  if spell then return spell, profile, name, nil end
+
+  local best, bestProfile, bestName, bestLen
+  for p, data in pairs(SpellInfo) do
+    for k, s in pairs(data) do
+      local words = s.words
+      if s.parameter and words and #text > #words and text:sub(1, #words) == words
+         and text:sub(#words + 1, #words + 1) == ' ' and (not bestLen or #words > bestLen) then
+        best, bestProfile, bestName, bestLen = s, p, k, #words
+      end
+    end
+  end
+  if not best then return nil end
+  local param = raw:sub(bestLen + 2):trim():gsub('^"', ''):gsub('"$', '')
+  return best, bestProfile, bestName, param
 end
 
 function Spells.getSpellByIcon(iconId)
@@ -499,6 +530,8 @@ function Spells.getSpellProfileById(id)
 end
 
 function Spells.getSpellProfileByWords(words)
+  if type(words) ~= 'string' then return nil end
+  words = words:lower():trim()
   for profile,data in pairs(SpellInfo) do
     for k,spell in pairs(data) do
       if spell.words == words then
@@ -510,6 +543,7 @@ function Spells.getSpellProfileByWords(words)
 end
 
 function Spells.getSpellProfileByName(spellName)
+  if type(spellName) ~= 'string' then return nil end
   for profile,data in pairs(SpellInfo) do
     if table.findbykey(data, spellName:trim(), true) then
       return profile

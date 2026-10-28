@@ -34,9 +34,13 @@ function UIItem:onDrop(widget, mousePos, forced)
   end
 
   local toPos = self.position
+  if not toPos then return false end
 
   local itemPos = item:getPosition()
-  if itemPos.x == toPos.x and itemPos.y == toPos.y and itemPos.z == toPos.z then return false end
+  if itemPos.x == toPos.x and itemPos.y == toPos.y and itemPos.z == toPos.z then
+    self:setBorderWidth(0)
+    return false
+  end
 
   if item:getCount() > 1 then
     modules.game_interface.moveStackableItem(item, toPos)

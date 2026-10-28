@@ -402,4 +402,67 @@ ChannelEvent = {
   Exclude = 3,
 }
 
+-- Synced with Canary (src/utils/utils_definitions.hpp, src/enums)
+
+VipState.Training = 3
+
+-- Canary TextColor_t / CreatureMark_t (server text and creature mark colors, 8-bit palette ids)
+CreatureMarks = {
+  Brown = 78,
+  Orange = 198,
+  Yellow = 210,
+  Unmarked = 255
+}
+
+-- Canary Fluids_t, matches item:getSubType() of fluid containers on newer servers
+FluidTypes = {
+  None = 0,
+  Water = 1,
+  Wine = 2,
+  Beer = 3,
+  Mud = 4,
+  Blood = 5,
+  Slime = 6,
+  Oil = 7,
+  Urine = 8,
+  Milk = 9,
+  Mana = 10,
+  Life = 11,
+  Lemonade = 12,
+  Rum = 13,
+  FruitJuice = 14,
+  CoconutMilk = 15,
+  Mead = 16,
+  Tea = 17,
+  Ink = 18,
+  Candy = 19,
+  Chocolate = 20
+}
+
+-- Canary Blessings enum (blessing ids used by servers and NPCs)
+BlessingIds = {
+  TwistOfFate = 1,
+  WisdomOfSolitude = 2,
+  SparkOfThePhoenix = 3,
+  FireOfTheSuns = 4,
+  SpiritualShielding = 5,
+  EmbraceOfTibia = 6,
+  HeartOfTheMountain = 7,
+  BloodOfTheMountain = 8
+}
+
+-- Canary PvpMode_t / FightMode_t names, handy for UI and logs
+FightModeNames = {
+  [FightOffensive] = 'Offensive',
+  [FightBalanced] = 'Balanced',
+  [FightDefensive] = 'Defensive'
+}
+
+PVPModeNames = {
+  [PVPWhiteDove] = 'Dove',
+  [PVPWhiteHand] = 'White Hand',
+  [PVPYellowHand] = 'Yellow Hand',
+  [PVPRedFist] = 'Red Fist'
+}
+
 -- @}

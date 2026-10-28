@@ -139,6 +139,7 @@ function executeBot(config, storage, tabs, msgCallback, saveConfigCallback, relo
   context.OutputMessage = OutputMessage
   context.modules = modules
   context.Directions = Directions
+  context.Position = Position
 
   -- log functions
   context.info = function(text) return msgCallback("info", tostring(text)) end

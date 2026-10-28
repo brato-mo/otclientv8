@@ -3,6 +3,7 @@ function g_game.getRsa()
 end
 
 function g_game.findPlayerItem(itemId, subType)
+    subType = subType or -1
     local localPlayer = g_game.getLocalPlayer()
     if localPlayer then
         for slot = InventorySlotFirst, InventorySlotLast do
