@@ -5,6 +5,7 @@ end
 function UIMinimap:onSetup()
   self.flagWindow = nil
   self.flags = {}
+  self.flagIndex = {}
   self.alternatives = {}
   self.onAddAutomapFlag = function(pos, icon, description) self:addFlag(pos, icon, description) end
   self.onRemoveAutomapFlag = function(pos, icon, description) self:removeFlag(pos, icon, description) end
@@ -25,6 +26,7 @@ function UIMinimap:onDestroy()
   })
   self:destroyFlagWindow()
   self.flags = {}
+  self.flagIndex = {}
 end
 
 function UIMinimap:onVisibilityChange()
@@ -33,9 +35,12 @@ function UIMinimap:onVisibilityChange()
   end
 end
 
-function UIMinimap:onCameraPositionChange(cameraPos)
+function UIMinimap:onCameraPositionChange(cameraPos, oldPos)
   if self.cross then
     self:setCrossPosition(self.cross.pos)
+  end
+  if self.presetMarkers and (not oldPos or cameraPos.z ~= oldPos.z) then
+    self:updatePresetFlags()
   end
 end
 
@@ -131,8 +136,13 @@ function UIMinimap:addFlag(pos, icon, description, temporary)
   end
   flag:setTooltip(description)
   flag.onMouseRelease = onFlagMouseRelease
-  flag.onDestroy = function() table.removevalue(self.flags, flag) end
+  local key = pos.x .. ',' .. pos.y .. ',' .. pos.z
+  flag.onDestroy = function()
+    table.removevalue(self.flags, flag)
+    if self.flagIndex[key] == flag then self.flagIndex[key] = nil end
+  end
   table.insert(self.flags, flag)
+  self.flagIndex[key] = flag
   self:centerInPosition(flag, pos)
 end
 
@@ -169,12 +179,56 @@ function UIMinimap:onZoomChange(zoom)
 end
 
 function UIMinimap:getFlag(pos)
-  for _,flag in pairs(self.flags) do
-    if flag.pos.x == pos.x and flag.pos.y == pos.y and flag.pos.z == pos.z then
-      return flag
+  return self.flagIndex[pos.x .. ',' .. pos.y .. ',' .. pos.z]
+end
+
+-- markers shipped with the client (data/minimap_markers.lua), added as temporary flags so they are never saved;
+-- only the floor being viewed gets widgets, to keep the minimap light
+function UIMinimap:setPresetFlags(markers)
+  self:clearPresetFlags()
+  self.presetMarkers = {}
+  for _,m in ipairs(markers) do
+    local floor = self.presetMarkers[m[3]]
+    if not floor then
+      floor = {}
+      self.presetMarkers[m[3]] = floor
+    end
+    table.insert(floor, m)
+  end
+  self:updatePresetFlags()
+end
+
+function UIMinimap:updatePresetFlags()
+  if not self.presetMarkers then return end
+  local z = self:getCameraPosition().z
+  if self.presetFlags and self.presetFloor == z then return end
+  self:destroyPresetFlagWidgets()
+  self.presetFloor = z
+  self.presetFlags = {}
+  local layout = self:getLayout()
+  layout:disableUpdates()
+  for _,m in ipairs(self.presetMarkers[z] or {}) do
+    local pos = {x = m[1], y = m[2], z = m[3]}
+    if not self:getFlag(pos) then
+      self:addFlag(pos, m[4], m[5], true)
+      table.insert(self.presetFlags, self:getFlag(pos))
     end
   end
-  return nil
+  layout:enableUpdates()
+  layout:update()
+end
+
+function UIMinimap:destroyPresetFlagWidgets()
+  if not self.presetFlags then return end
+  for _,flag in ipairs(self.presetFlags) do
+    if not flag:isDestroyed() then flag:destroy() end
+  end
+  self.presetFlags = nil
+end
+
+function UIMinimap:clearPresetFlags()
+  self:destroyPresetFlagWidgets()
+  self.presetMarkers = nil
 end
 
 function UIMinimap:removeFlag(pos, icon, description)
@@ -237,6 +291,10 @@ function UIMinimap:onMouseRelease(pos, button)
     local menu = g_ui.createWidget('PopupMenu')
     menu:setGameMenu(true)
     menu:addOption(tr('Create mark'), function() self:createFlagWindow(mapPos) end)
+    if self.onTogglePresetFlags then
+      local text = self.presetMarkers and tr('Hide Tibia map markers') or tr('Show Tibia map markers')
+      menu:addOption(text, function() self.onTogglePresetFlags(not self.presetMarkers) end)
+    end
     menu:display(pos)
     return true
   end
