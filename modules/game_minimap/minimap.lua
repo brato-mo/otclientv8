@@ -123,6 +123,30 @@ function loadMap()
     print("Minimap couldn't be loaded, file missing?")
   end
   minimapWidget:load()
+  loadPresetMarkers()
+end
+
+local presetMarkers = nil
+function loadPresetMarkers()
+  local file = '/data/minimap_markers.lua'
+  if not g_resources.fileExists(file) then return end
+  minimapWidget.onTogglePresetFlags = function(show)
+    g_settings.set('minimapPresetMarkers', show)
+    loadPresetMarkers()
+  end
+  if g_settings.getBoolean('minimapPresetMarkers', true) == false then
+    minimapWidget:clearPresetFlags()
+    return
+  end
+  if not presetMarkers then
+    local ok, result = pcall(function() return loadstring(g_resources.readFileContents(file), '@' .. file)() end)
+    if not ok or type(result) ~= 'table' then
+      g_logger.error('Unable to load minimap markers: ' .. tostring(result))
+      return
+    end
+    presetMarkers = result
+  end
+  minimapWidget:setPresetFlags(presetMarkers)
 end
 
 function saveMap()
