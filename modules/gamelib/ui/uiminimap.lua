@@ -39,9 +39,7 @@ function UIMinimap:onCameraPositionChange(cameraPos, oldPos)
   if self.cross then
     self:setCrossPosition(self.cross.pos)
   end
-  if self.presetMarkers and (not oldPos or cameraPos.z ~= oldPos.z) then
-    self:updatePresetFlags()
-  end
+  self:updatePresetFlags()
 end
 
 function UIMinimap:hideFloor()
@@ -182,8 +180,11 @@ function UIMinimap:getFlag(pos)
   return self.flagIndex[pos.x .. ',' .. pos.y .. ',' .. pos.z]
 end
 
--- markers shipped with the client (data/minimap_markers.lua), added as temporary flags so they are never saved;
--- only the floor being viewed gets widgets, to keep the minimap light
+-- markers shipped with the client (data/minimap_markers.lua) are added as temporary flags, so they are never saved.
+-- Only markers near the camera get widgets; the set is rebuilt when the camera moves far enough from the window center.
+local PRESET_WINDOW = 40   -- tiles on each side of the camera
+local PRESET_REFRESH = 16  -- rebuild once the camera moves this many tiles from the last window center
+
 function UIMinimap:setPresetFlags(markers)
   self:clearPresetFlags()
   self.presetMarkers = {}
@@ -195,39 +196,53 @@ function UIMinimap:setPresetFlags(markers)
     end
     table.insert(floor, m)
   end
-  self:updatePresetFlags()
+  self:updatePresetFlags(true)
 end
 
-function UIMinimap:updatePresetFlags()
+function UIMinimap:updatePresetFlags(force)
   if not self.presetMarkers then return end
-  local z = self:getCameraPosition().z
-  if self.presetFlags and self.presetFloor == z then return end
-  self:destroyPresetFlagWidgets()
-  self.presetFloor = z
-  self.presetFlags = {}
+  local cam = self:getCameraPosition()
+  local center = self.presetCenter
+  if not force and center and center.z == cam.z
+     and math.abs(center.x - cam.x) < PRESET_REFRESH and math.abs(center.y - cam.y) < PRESET_REFRESH then
+    return
+  end
+  self.presetCenter = {x = cam.x, y = cam.y, z = cam.z}
+
+  -- one layout pass for the whole rebuild: every widget change would otherwise re-anchor all the others
   local layout = self:getLayout()
   layout:disableUpdates()
-  for _,m in ipairs(self.presetMarkers[z] or {}) do
-    local pos = {x = m[1], y = m[2], z = m[3]}
-    if not self:getFlag(pos) then
-      self:addFlag(pos, m[4], m[5], true)
-      table.insert(self.presetFlags, self:getFlag(pos))
+  if self.presetFlags then
+    for _,flag in ipairs(self.presetFlags) do
+      if not flag:isDestroyed() then flag:destroy() end
+    end
+  end
+  self.presetFlags = {}
+  for _,m in ipairs(self.presetMarkers[cam.z] or {}) do
+    if math.abs(m[1] - cam.x) <= PRESET_WINDOW and math.abs(m[2] - cam.y) <= PRESET_WINDOW then
+      local pos = {x = m[1], y = m[2], z = m[3]}
+      if not self:getFlag(pos) then
+        self:addFlag(pos, m[4], m[5], true)
+        table.insert(self.presetFlags, self:getFlag(pos))
+      end
     end
   end
   layout:enableUpdates()
   layout:update()
 end
 
-function UIMinimap:destroyPresetFlagWidgets()
-  if not self.presetFlags then return end
-  for _,flag in ipairs(self.presetFlags) do
-    if not flag:isDestroyed() then flag:destroy() end
+function UIMinimap:clearPresetFlags()
+  if self.presetFlags then
+    local layout = self:getLayout()
+    layout:disableUpdates()
+    for _,flag in ipairs(self.presetFlags) do
+      if not flag:isDestroyed() then flag:destroy() end
+    end
+    layout:enableUpdates()
+    layout:update()
   end
   self.presetFlags = nil
-end
-
-function UIMinimap:clearPresetFlags()
-  self:destroyPresetFlagWidgets()
+  self.presetCenter = nil
   self.presetMarkers = nil
 end
 
