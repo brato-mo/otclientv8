@@ -127,6 +127,7 @@ function loadMap()
 end
 
 local presetMarkers = nil
+local presetLoadEvent = nil
 function loadPresetMarkers()
   local file = '/data/minimap_markers.lua'
   if not g_resources.fileExists(file) then return end
@@ -134,19 +135,28 @@ function loadPresetMarkers()
     g_settings.set('minimapPresetMarkers', show)
     loadPresetMarkers()
   end
+  removeEvent(presetLoadEvent)
+  presetLoadEvent = nil
   if g_settings.getBoolean('minimapPresetMarkers', true) == false then
     minimapWidget:clearPresetFlags()
     return
   end
-  if not presetMarkers then
+  if presetMarkers then
+    minimapWidget:setPresetFlags(presetMarkers)
+    return
+  end
+  -- read the marker file a moment after login instead of during it; the widget then indexes it over several frames
+  presetLoadEvent = scheduleEvent(function()
+    presetLoadEvent = nil
+    if not minimapWidget or minimapWidget:isDestroyed() then return end
     local ok, result = pcall(function() return loadstring(g_resources.readFileContents(file), '@' .. file)() end)
     if not ok or type(result) ~= 'table' then
       g_logger.error('Unable to load minimap markers: ' .. tostring(result))
       return
     end
     presetMarkers = result
-  end
-  minimapWidget:setPresetFlags(presetMarkers)
+    minimapWidget:setPresetFlags(presetMarkers)
+  end, 500)
 end
 
 function saveMap()
