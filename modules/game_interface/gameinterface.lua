@@ -583,6 +583,7 @@ end
 
 function processMouseAction(menuPosition, mouseButton, autoWalkPos, lookThing, useThing, creatureThing, attackCreature, marking)
   local keyboardModifiers = g_keyboard.getModifiers()
+  local player = g_game.getLocalPlayer()
 
   if g_app.isMobile() then
     if mouseButton == MouseRightButton then

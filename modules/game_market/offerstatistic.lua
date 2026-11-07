@@ -68,10 +68,10 @@ function OfferStatistic:getTransactions()
 end
 
 function OfferStatistic:setTotalPrice(amount)
-  if not totalPrice or type(totalPrice) ~= 'number'  then
+  if not amount or type(amount) ~= 'number'  then
     g_logger.error('OfferStatistic.setTotalPrice - invalid total price provided.')
   end
-  self.totalPrice = totalPrice
+  self.totalPrice = amount
 end
 
 function OfferStatistic:getTotalPrice()
