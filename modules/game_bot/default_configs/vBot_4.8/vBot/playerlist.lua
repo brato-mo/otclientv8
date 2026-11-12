@@ -301,7 +301,7 @@ if rootWidget then
       local label = UI.createWidget("PlayerLabel", blacklistList)
       label:setText(name)
       label.remove.onClick = function()
-          table.remove(playerList, table.find(playerList, name))
+          table.remove(config.blackList, table.find(config.blackList, name))
           label:destroy()
       end
       label.onMouseRelease = function(widget, mousePos, mouseButton)
