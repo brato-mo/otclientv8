@@ -819,6 +819,9 @@ function getMapPanel()
   return gameMapPanel
 end
 
+-- forward declaration: defined below, used by getRightPanel
+local addRightPanel
+
 function getRightPanel()
   if gameRightPanels:getChildCount() == 0 then
     addRightPanel()
@@ -845,7 +848,7 @@ function getContainerPanel()
   return gameLeftPanels:getChildByIndex(math.min(containerPanel, gameLeftPanels:getChildCount()))
 end
 
-local function addRightPanel()
+function addRightPanel()
   if gameRightPanels:getChildCount() >= 4 then
     return
   end
