@@ -34,6 +34,7 @@ local luaFiles = {
   "new_healer",
   "paladin_healer",
   "druid_healer",
+  "druid_attack",
   "AttackBot", -- last of major modules
   "ingame_editor",
   "Dropper",
