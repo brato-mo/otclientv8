@@ -33,6 +33,7 @@ local luaFiles = {
   "HealBot",
   "new_healer",
   "paladin_healer",
+  "druid_healer",
   "AttackBot", -- last of major modules
   "ingame_editor",
   "Dropper",
