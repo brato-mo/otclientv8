@@ -55,7 +55,6 @@ function init()
   gameLeftActionPanel = gameRootPanel:getChildById('gameLeftActionPanel')  
   gameTopBar = gameRootPanel:getChildById('gameTopBar')
   gameLeftActions = gameRootPanel:getChildById('gameLeftActions')
-  connect(gameLeftPanel, { onVisibilityChange = onLeftPanelVisibilityChange })
 
   logoutButton = modules.client_topmenu.addLeftButton('logoutButton', tr('Exit'),
     '/images/topbuttons/logout', tryLogout, true)
